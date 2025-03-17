@@ -1,6 +1,12 @@
-let fingerprintDB = []; // Temporary storage
+let users = {}; // Store email and fingerprint credentials
 
 async function registerFingerprint() {
+    let email = document.getElementById("registerEmail").value;
+    if (!email) {
+        document.getElementById("status").innerText = "Enter an email to register.";
+        return;
+    }
+
     if (!window.PublicKeyCredential) {
         document.getElementById("status").innerText = "WebAuthn is not supported in this browser.";
         return;
@@ -9,12 +15,12 @@ async function registerFingerprint() {
     try {
         const credential = await navigator.credentials.create({
             publicKey: {
-                challenge: new Uint8Array(32), 
+                challenge: new Uint8Array(32),
                 rp: { name: "Local App" },
                 user: {
-                    id: new Uint8Array(16),
-                    name: "test-user",
-                    displayName: "Test User",
+                    id: new TextEncoder().encode(email), // Use email as unique ID
+                    name: email,
+                    displayName: email,
                 },
                 pubKeyCredParams: [
                     { type: "public-key", alg: -7 },    // ES256
@@ -26,9 +32,9 @@ async function registerFingerprint() {
             },
         });
 
-        fingerprintDB.push(credential); // Save in memory
+        users[email] = credential; // Store the credential for the email
         document.getElementById("status").innerText = "Fingerprint registered successfully!";
-        console.log("Saved fingerprint:", credential);
+        console.log("Saved fingerprint for:", email, credential);
     } catch (error) {
         console.error("Registration failed:", error);
         document.getElementById("status").innerText = "Registration failed. Try again.";
@@ -36,8 +42,9 @@ async function registerFingerprint() {
 }
 
 async function verifyFingerprint() {
-    if (!window.PublicKeyCredential) {
-        document.getElementById("status").innerText = "WebAuthn is not supported in this browser.";
+    let email = document.getElementById("loginEmail").value;
+    if (!email || !users[email]) {
+        document.getElementById("status").innerText = "No fingerprint registered for this email.";
         return;
     }
 
@@ -49,7 +56,7 @@ async function verifyFingerprint() {
             },
         });
 
-        if (fingerprintDB.some(fp => fp.id === credential.id)) {
+        if (users[email] && users[email].id === credential.id) {
             document.getElementById("status").innerText = "Fingerprint matched! Login successful.";
         } else {
             document.getElementById("status").innerText = "Fingerprint did not match. Try again.";
