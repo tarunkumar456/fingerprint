@@ -1,141 +1,26 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <title>Fingerprint Auth Demo</title>
-    <style>
-        .container {
-            max-width: 400px;
-            margin: 2rem auto;
-            padding: 2rem;
-            box-shadow: 0 0 10px rgba(0,0,0,0.1);
-        }
-        .form-group {
-            margin-bottom: 1rem;
-        }
-        input {
-            width: 100%;
-            padding: 0.5rem;
-            margin-bottom: 1rem;
-        }
-        button {
-            background: #007bff;
-            color: white;
-            border: none;
-            padding: 0.5rem 1rem;
-            cursor: pointer;
-        }
-        #message {
-            margin-top: 1rem;
-            color: green;
-        }
-        .error {
-            color: red;
-        }
-    </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fingerprint Authentication</title>
+    <link rel="stylesheet" href="style.css">
 </head>
 <body>
     <div class="container">
-        <div class="form-group">
-            <input type="email" id="email" placeholder="Enter email">
-            <button onclick="register()">Register with Fingerprint</button>
-            <button onclick="login()">Login with Fingerprint</button>
-        </div>
-        <div id="message"></div>
+        <h1>Fingerprint Authentication</h1>
+        
+        <h2>Register</h2>
+        <input type="email" id="registerEmail" placeholder="Enter your email">
+        <button onclick="registerFingerprint()">Register Fingerprint</button>
+
+        <h2>Login</h2>
+        <input type="email" id="loginEmail" placeholder="Enter your email">
+        <button onclick="verifyFingerprint()">Login with Fingerprint</button>
+
+        <p id="status"></p>
     </div>
 
-    <script>
-        // Temporary storage (replace with proper database in production)
-        let users = [];
-
-        async function register() {
-            const email = document.getElementById('email').value;
-            if (!email) {
-                showMessage('Please enter email', true);
-                return;
-            }
-
-            try {
-                // Create new credential
-                const credential = await navigator.credentials.create({
-                    publicKey: {
-                        challenge: new Uint8Array(32),
-                        rp: { name: "Demo App" },
-                        user: {
-                            id: new Uint8Array(16),
-                            name: email,
-                            displayName: email
-                        },
-                        pubKeyCredParams: [{ type: "public-key", alg: -7 }],
-                        authenticatorSelection: {
-                            userVerification: "required"
-                        }
-                    }
-                });
-
-                // Store user
-                users.push({
-                    email,
-                    credential: {
-                        id: Array.from(new Uint8Array(credential.rawId)),
-                        publicKey: credential.response.getPublicKey(),
-                        authenticatorData: credential.response.authenticatorData
-                    }
-                });
-
-                showMessage('Registration successful!');
-            } catch (err) {
-                showMessage('Registration failed: ' + err.message, true);
-            }
-        }
-
-        async function login() {
-            const email = document.getElementById('email').value;
-            const user = users.find(u => u.email === email);
-            
-            if (!user) {
-                showMessage('User not found', true);
-                return;
-            }
-
-            try {
-                // Verify credential
-                const assertion = await navigator.credentials.get({
-                    publicKey: {
-                        challenge: new Uint8Array(32),
-                        allowCredentials: [{
-                            id: new Uint8Array(user.credential.id),
-                            type: 'public-key'
-                        }],
-                        userVerification: "required"
-                    }
-                });
-
-                // Simple verification (insecure demo only)
-                const isValid = compareCredentials(
-                    user.credential.authenticatorData,
-                    assertion.response.authenticatorData
-                );
-
-                if (isValid) {
-                    showMessage('Login successful!');
-                } else {
-                    showMessage('Authentication failed', true);
-                }
-            } catch (err) {
-                showMessage('Login failed: ' + err.message, true);
-            }
-        }
-
-        function compareCredentials(a, b) {
-            // Insecure demo comparison - real implementation needs proper signature verification
-            return JSON.stringify(a) === JSON.stringify(b);
-        }
-
-        function showMessage(text, isError = false) {
-            const messageEl = document.getElementById('message');
-            messageEl.textContent = text;
-            messageEl.className = isError ? 'error' : '';
-        }
-    </script>
+    <script src="script.js"></script>
 </body>
 </html>
